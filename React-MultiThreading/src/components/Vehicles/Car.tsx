@@ -1,10 +1,10 @@
 interface CarProps {
-    marginValue:number
+    marginCar:number
 }
  
-const Car: React.FunctionComponent<CarProps> = ({marginValue}:CarProps) => {
+const Car: React.FunctionComponent<CarProps> = ({marginCar}:CarProps) => {
     return ( 
-        <div style={{marginTop:marginValue+"px"}} 
+        <div style={{marginTop:marginCar+"px"}} 
         className="w-8 h-16 ml-1 bg-yellow-400 mt-16">
         </div>
      );

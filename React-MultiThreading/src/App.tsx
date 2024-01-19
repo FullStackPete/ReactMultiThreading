@@ -7,16 +7,16 @@ import { useState, useRef, useEffect } from "react";
 
 function App() {
   const [carState, setCarState] = useState<string | undefined>("Cars drive");
-  const [marginValue, setMarginValue] = useState<number>(0);
-  const [marginLeft, setMarginLeft] = useState<number>(-260);
+  const [marginCar, setmarginCar] = useState<number>(0);
+  const [marginTrain, setMarginTrain] = useState<number>(-260);
   const [carRoadHeight, setCarRoadHeight] = useState<number>();
   const [carRoadWidth, setCarRoadWidth] = useState<number>();
   const [trainRoadHeight, setTrainRoadHeight] = useState<number>();
   const [trainRoadWidth, setTrainRoadWidth] = useState<number>();
   const [appIsRunning, setAppIsRunning] = useState<boolean>(true);
 
-  const marginValueRef = useRef(marginValue);
-  const marginLeftRef = useRef(marginLeft);
+  const marginCarRef = useRef(marginCar);
+  const marginTrainRef = useRef(marginTrain);
 
   const appStartHandler = () => {
     console.log(appIsRunning);
@@ -27,11 +27,11 @@ function App() {
     return setAppIsRunning(false);
   };
   useEffect(() => {
-    marginLeftRef.current = marginLeft;
-  }, [marginLeft]);
+    marginTrainRef.current = marginTrain;
+  }, [marginTrain]);
   useEffect(() => {
-    marginValueRef.current = marginValue;
-  }, [marginValue]);
+    marginCarRef.current = marginCar;
+  }, [marginCar]);
 
   useEffect(() => {
     // Poniższy kod zostanie wykonany po zamontowaniu komponentu
@@ -59,42 +59,44 @@ function App() {
       // Use a callback to ensure you get the correct state
       setCarState((prevCarState) => {
         if (e.data === "Train comes") {
-          setMarginLeft(-260);
-          if (marginValueRef.current < 520) {
+          setMarginTrain(-260);
+          if (marginCarRef.current < carRoadHeight!/2) {
+            console.log("CARS STOP!!!!!!!!!!!!!")
             return "Cars stop";
           } else return "Cars drive";
         }
       });
     };
 
-    const carInterval = setInterval(() => {
+    const gameUpdate = setInterval(() => {
+      setMarginTrain((prev) => prev + 4);
+
       if (carState === "Cars drive") {
-        //        console.log(marginValueRef.current,carRoadHeight)
-        if (marginValueRef.current > carRoadHeight!) {
-          setMarginValue(0);
+        //        console.log(marginCarRef.current,carRoadHeight)
+        if (marginCarRef.current > carRoadHeight!) {
+          setmarginCar(0);
         }
 
-        setMarginValue((prev) => {
-          const newValue = prev + 2;
+        setmarginCar((prev) => {
+          const newValue = prev + 3;
           return newValue;
         });
       } else if (carState === "Cars stop") {
-        if (marginValueRef.current < 400) {
-          setMarginValue((prev) => prev + 2);
-        } else {}
-        if (marginLeftRef.current > trainRoadWidth! / 2) {
+        console.log((carRoadHeight!/2)-(trainRoadHeight!*2));
+        if (marginCarRef.current <= (carRoadHeight!/2)-(trainRoadHeight!*2)) { // sprawdzay czy auto jest przy drodze pociagu.
+          setmarginCar((prev) => prev + 3); //jesli jeszcze nie dojechalo to auto jedzie
+        } else if (marginTrainRef.current>= trainRoadWidth!) {
           setCarState("Cars drive");
+        } else {
+        setmarginCar((prev)=>prev);
         }
       }
-    }, 10);
+    }, 5);
 
-    const trainInterval = setInterval(() => {
-      setMarginLeft((prev) => prev + 4);
-    }, 15);
+    
 
     return () => {
-      clearInterval(carInterval);
-      clearInterval(trainInterval);
+      clearInterval(gameUpdate);      
       car.terminate();
       train.terminate();
     };
@@ -108,10 +110,10 @@ function App() {
       />
       <div className="h-screen">
         <CarRoad>
-          <Car marginValue={marginValue} />
+          <Car marginCar={marginCar} />
         </CarRoad>
         <TrainRoad>
-          <Train marginLeft={marginLeft} />
+          <Train marginLeft={marginTrain} />
         </TrainRoad>
       </div>
     </>
