@@ -60,8 +60,8 @@ function App() {
       setCarState((prevCarState) => {
         if (e.data === "Train comes") {
           setMarginTrain(-260);
-          if (marginCarRef.current < carRoadHeight!/2) {
-            console.log("CARS STOP!!!!!!!!!!!!!")
+          if (marginCarRef.current < carRoadHeight! / 2) {
+            console.log("CARS STOP!!!!!!!!!!!!!");
             return "Cars stop";
           } else return "Cars drive";
         }
@@ -82,21 +82,20 @@ function App() {
           return newValue;
         });
       } else if (carState === "Cars stop") {
-        console.log((carRoadHeight!/2)-(trainRoadHeight!*2));
-        if (marginCarRef.current <= (carRoadHeight!/2)-(trainRoadHeight!*2)) { // sprawdzay czy auto jest przy drodze pociagu.
+        console.log(carRoadHeight! / 2 - trainRoadHeight! * 2);
+        if (marginCarRef.current <= carRoadHeight! / 2 - trainRoadHeight! * 2) {
+          // sprawdzay czy auto jest przy drodze pociagu.
           setmarginCar((prev) => prev + 3); //jesli jeszcze nie dojechalo to auto jedzie
-        } else if (marginTrainRef.current>= trainRoadWidth!) {
+        } else if (marginTrainRef.current >= trainRoadWidth!) {
           setCarState("Cars drive");
         } else {
-        setmarginCar((prev)=>prev);
+          setmarginCar((prev) => prev);
         }
       }
     }, 5);
 
-    
-
     return () => {
-      clearInterval(gameUpdate);      
+      clearInterval(gameUpdate);
       car.terminate();
       train.terminate();
     };
