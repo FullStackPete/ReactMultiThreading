@@ -42,10 +42,10 @@ function App() {
       setTrainRoadWidth(trainRoadElement.offsetWidth);
       setCarRoadHeight(carRoadElement.offsetHeight);
       setCarRoadWidth(carRoadElement.offsetWidth);
-      console.log(carRoadHeight);
-      console.log(carRoadWidth);
-      console.log(trainRoadHeight);
-      console.log(trainRoadWidth);
+      console.log("Car road height",carRoadHeight);
+      console.log("Car road width", carRoadWidth);
+      console.log("Train road height",trainRoadHeight);
+      console.log("Train road width", trainRoadWidth);
     }
   }, [carRoadHeight, carRoadWidth]);
 
@@ -53,46 +53,43 @@ function App() {
     if (!appIsRunning) return;
     const car = new Worker("CarWorker.ts");
     const train = new Worker("TrainWorker.ts");
+    car.postMessage("Cars drive");
+    train.postMessage("Train comes");
+
+    car.onmessage = (e) => {
+      setmarginCar(e.data);
+      if (e.data == "Car has been reset") {
+        car.postMessage("Cars drive");
+      }
+    };
 
     train.onmessage = (e) => {
-      console.log("Received message from TrainWorker:", e.data);
-      // Use a callback to ensure you get the correct state
-      setCarState((prevCarState) => {
-        if (e.data === "Train comes") {
-          setMarginTrain(-260);
-          if (marginCarRef.current < carRoadHeight! / 2) {
-            console.log("CARS STOP!!!!!!!!!!!!!");
-            return "Cars stop";
-          } else return "Cars drive";
-        }
-      });
+      setMarginTrain(e.data);
+      if (e.data == "Train has been reset") {
+        train.postMessage("Train comes");
+      }
     };
 
     const gameUpdate = setInterval(() => {
-      setMarginTrain((prev) => prev + 4);
-
-      if (carState === "Cars drive") {
-        //        console.log(marginCarRef.current,carRoadHeight)
-        if (marginCarRef.current > carRoadHeight!) {
-          setmarginCar(0);
-        }
-
-        setmarginCar((prev) => {
-          const newValue = prev + 3;
-          return newValue;
-        });
-      } else if (carState === "Cars stop") {
-        console.log(carRoadHeight! / 2 - trainRoadHeight! * 2);
-        if (marginCarRef.current <= carRoadHeight! / 2 - trainRoadHeight! * 2) {
-          // sprawdzay czy auto jest przy drodze pociagu.
-          setmarginCar((prev) => prev + 3); //jesli jeszcze nie dojechalo to auto jedzie
-        } else if (marginTrainRef.current >= trainRoadWidth!) {
-          setCarState("Cars drive");
-        } else {
-          setmarginCar((prev) => prev);
-        }
+      //resetujemy pozycję autka, gdy przejedzie cały ekran
+      if (marginCarRef.current > carRoadHeight!) {
+        car.postMessage("resetCar");
+        console.log("resetCar")
       }
-    }, 5);
+      if (marginTrainRef.current > trainRoadWidth!) {
+        train.postMessage("resetTrain");
+      }
+      if (
+        marginTrainRef.current < trainRoadWidth! / 2 &&
+        marginCarRef.current < carRoadHeight! / 2 - trainRoadHeight! &&
+        marginCarRef.current >
+          carRoadHeight! / 2 - (1 / 3) * (carRoadHeight! / 2)
+      ) {
+        car.postMessage("Cars stop");
+      } else {
+        car.postMessage("Cars drive");
+      }
+    },20);
 
     return () => {
       clearInterval(gameUpdate);
