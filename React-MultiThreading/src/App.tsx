@@ -6,7 +6,11 @@ import ControlPanel from "./components/ControlPanel";
 import { useState, useRef, useEffect } from "react";
 
 function App() {
-  const [carState, setCarState] = useState<string | undefined>("Cars drive");
+  const [trainSpeed, setTrainSpeed] = useState<number>(8);
+  const [car1Speed,setCar1Speed] = useState<number>(2);
+  const [car2Speed,setCar2Speed] = useState<number>(2);
+  const [numberOfCars, setNumberOfCars] = useState<number>(1);
+  const [marginCar2, setMarginCar2] = useState<number>(0);
   const [marginCar, setmarginCar] = useState<number>(0);
   const [marginTrain, setMarginTrain] = useState<number>(-260);
   const [carRoadHeight, setCarRoadHeight] = useState<number>();
@@ -16,23 +20,41 @@ function App() {
   const [appIsRunning, setAppIsRunning] = useState<boolean>(true);
 
   const marginCarRef = useRef(marginCar);
+  const marginCar2Ref = useRef(marginCar2);
   const marginTrainRef = useRef(marginTrain);
 
-  const appStartHandler = () => {
-    console.log(appIsRunning);
-    return setAppIsRunning(true);
+  const handleCar1SpeedChange = (event:React.ChangeEvent<HTMLInputElement>)=>{
+const newCar1Speed = parseInt(event.target.value,10);
+setCar1Speed(newCar1Speed);
+  }
+  const handleCar2SpeedChange = (event:React.ChangeEvent<HTMLInputElement>)=>{
+    const newCar2Speed = parseInt(event.target.value,10);
+    setCar2Speed(newCar2Speed);
+      }
+  const handleTrainSpeedChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newTrainSpeed = parseInt(event.target.value, 10);
+    setTrainSpeed(newTrainSpeed);
   };
-  const appStopHandler = () => {
-    console.log(appIsRunning);
-    return setAppIsRunning(false);
+  const appRestartHandler = () => {
+    setAppIsRunning(false);
+    setTimeout(() => {
+      setAppIsRunning(true);
+    }, 50);
   };
   useEffect(() => {
     marginTrainRef.current = marginTrain;
-  }, [marginTrain]);
-  useEffect(() => {
     marginCarRef.current = marginCar;
-  }, [marginCar]);
+    marginCar2Ref.current = marginCar2;
+  }, [marginCar, marginCar2, marginTrain]);
 
+  const numOfCarsChanged = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedNumberOfCars = parseInt(event.target.value, 10);
+    setNumberOfCars(selectedNumberOfCars);
+    console.log(selectedNumberOfCars);
+    appRestartHandler();
+  };
   useEffect(() => {
     // Poniższy kod zostanie wykonany po zamontowaniu komponentu
     const trainRoadElement = document.getElementById("TrainRoad");
@@ -42,42 +64,55 @@ function App() {
       setTrainRoadWidth(trainRoadElement.offsetWidth);
       setCarRoadHeight(carRoadElement.offsetHeight);
       setCarRoadWidth(carRoadElement.offsetWidth);
-      console.log("Car road height",carRoadHeight);
-      console.log("Car road width", carRoadWidth);
-      console.log("Train road height",trainRoadHeight);
-      console.log("Train road width", trainRoadWidth);
     }
   }, [carRoadHeight, carRoadWidth]);
 
   useEffect(() => {
-    if (!appIsRunning) return;
     const car = new Worker("CarWorker.ts");
+    const car2 = new Worker("CarWorker2.ts");
     const train = new Worker("TrainWorker.ts");
-    car.postMessage("Cars drive");
-    train.postMessage("Train comes");
+    car.postMessage(["Cars drive",car1Speed]);
+    if (numberOfCars == 2) {
+      car2.postMessage(["Cars drive",car2Speed]);
+    }
+    train.postMessage(["Train comes",trainSpeed]);
+    if (!appIsRunning) return;
 
     car.onmessage = (e) => {
       setmarginCar(e.data);
       if (e.data == "Car has been reset") {
-        car.postMessage("Cars drive");
+        car.postMessage(["Cars drive",car1Speed]);
       }
     };
+
+    if (numberOfCars == 2) {
+      car2.onmessage = (e) => {
+        setMarginCar2(e.data);
+        if (e.data == "Car has been reset") {
+          car2.postMessage(["Cars drive",car2Speed]);
+        }
+      };
+    }
 
     train.onmessage = (e) => {
       setMarginTrain(e.data);
       if (e.data == "Train has been reset") {
-        train.postMessage("Train comes");
+        train.postMessage(["Train comes",trainSpeed]);
       }
     };
 
     const gameUpdate = setInterval(() => {
       //resetujemy pozycję autka, gdy przejedzie cały ekran
       if (marginCarRef.current > carRoadHeight!) {
-        car.postMessage("resetCar");
-        console.log("resetCar")
+        car.postMessage(["resetCar",car1Speed]);
       }
+
+      if (marginCar2Ref.current > carRoadHeight! && numberOfCars == 2) {
+        car2.postMessage(["resetCar",car2Speed]);
+      }
+
       if (marginTrainRef.current > trainRoadWidth!) {
-        train.postMessage("resetTrain");
+        train.postMessage(["resetTrain",trainSpeed]);
       }
       if (
         marginTrainRef.current < trainRoadWidth! / 2 &&
@@ -85,28 +120,55 @@ function App() {
         marginCarRef.current >
           carRoadHeight! / 2 - (1 / 3) * (carRoadHeight! / 2)
       ) {
-        car.postMessage("Cars stop");
+        car.postMessage(["Cars stop",car1Speed]);
       } else {
-        car.postMessage("Cars drive");
+        car.postMessage(["Cars drive",car1Speed]);
       }
-    },20);
+
+      if (
+        marginTrainRef.current < trainRoadWidth! / 2 &&
+        marginCar2Ref.current < carRoadHeight! / 2 - trainRoadHeight! &&
+        marginCar2Ref.current >
+          carRoadHeight! / 2 - (1 / 3) * (carRoadHeight! / 2) &&
+        numberOfCars == 2
+      ) {
+        car2.postMessage(["Cars stop",car2Speed]);
+      } else {
+        car2.postMessage(["Cars drive",car2Speed]);
+      }
+    }, 5);
 
     return () => {
       clearInterval(gameUpdate);
       car.terminate();
+      car2.terminate();
       train.terminate();
     };
-  }, [carState, carRoadHeight, appIsRunning]);
+  }, [carRoadHeight, appIsRunning,trainSpeed,car1Speed,car2Speed]);
 
   return (
     <>
       <ControlPanel
-        appStartHandler={appStartHandler}
-        appStopHandler={appStopHandler}
+      car2Exists={numberOfCars==2}
+      car1Speed={car1Speed}
+      car2Speed={car2Speed}
+      handleCar1SpeedChange={handleCar1SpeedChange}
+      handleCar2SpeedChange={handleCar2SpeedChange}
+        trainSpeed={trainSpeed}
+        handleTrainSpeedChange={handleTrainSpeedChange}
+        numberOfCarsChanged={(event) => numOfCarsChanged(event)}
+        appRestartHandler={appRestartHandler}
       />
       <div className="h-screen">
         <CarRoad>
-          <Car marginCar={marginCar} />
+          <Car imageName="Car1.png" customClass="ml-1" marginCar={marginCar} />
+          {numberOfCars == 2 && (
+            <Car
+              imageName="Car2.png"
+              customClass="ml-2"
+              marginCar={marginCar2}
+            />
+          )}
         </CarRoad>
         <TrainRoad>
           <Train marginLeft={marginTrain} />

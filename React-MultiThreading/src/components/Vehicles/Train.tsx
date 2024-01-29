@@ -7,8 +7,10 @@ const Train: React.FunctionComponent<TrainProps> = ({ marginLeft }) => {
   return (
     <div
       style={{ marginLeft: marginLeft + "px" }}
-      className="h-16 bg-red-500 w-64 mt-2"
-    ></div>
+      className="w-80 mt-4"
+    >
+      <img src="img/CHOOCHOO.png"/>
+    </div>
   );
 };
 

@@ -5,3 +5,7 @@
 body{
     overflow: hidden;
 }
+#TrainRoad{
+    background-image: url("./img/RailRoad.png");
+    background-repeat: no-repeat;
+}
